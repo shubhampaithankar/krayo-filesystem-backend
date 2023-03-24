@@ -47,7 +47,9 @@ router.get('/get', (req, res) => {
             })
         })
         .catch(err => {
-            console.log(err)
+            res.status(500).send({
+                message: `There was an error`
+            })
         })
 })
 
@@ -55,25 +57,23 @@ router.get('/download', (req, res) => {
 
     const { fileName } = req.query
 
-    const downloadURL = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_BUCKET_REGION}.amazonaws.com/${fileName}`
-    res.status(200).send({
-        url: downloadURL
-    })
+    const params = {
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: fileName,
+        Expires: 3600,
+        ResponseContentDisposition: `attachment; filename=${fileName.split('/')[1]}`
+    }
 
-    // const params = {
-    //     Bucket: process.env.AWS_BUCKET_NAME,
-    //     Key: fileName
-    // }
-
-    // s3.getObject(params)
-    //     .promise()
-    //     .then(data => {
-    //         res.status(200).send({
-    //             data
-    //         })
-    //     })
-    //     .catch(err => {
-    //         res.status(500).send('Error Fetching File')
-    //     })
+    try {
+        const url = s3.getSignedUrl('getObject', params)
+        res.status(200).send({
+            url
+        })
+    } catch (error) {
+        res.status(500).send({
+            message: `There was an error`
+        })
+    }
+    
 })
 module.exports = router
